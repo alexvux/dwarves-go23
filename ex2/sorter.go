@@ -36,7 +36,7 @@ func Root() {
 	case *intFlag:
 		arr, err := ParseInts(flag.Args())
 		if err != nil {
-			fmt.Println("Error when parsing: %w", err)
+			fmt.Println("Error when parsing:", err)
 			os.Exit(1)
 		}
 		sorted := SortItems[int](arr)
@@ -45,7 +45,7 @@ func Root() {
 	case *floatFlag:
 		arr, err := ParseFloats(flag.Args())
 		if err != nil {
-			fmt.Println("Error when parsing: %w", err)
+			fmt.Println("Error when parsing:", err)
 			os.Exit(1)
 		}
 		sorted := SortItems[float64](arr)
@@ -68,7 +68,7 @@ func Root() {
 		}
 
 	default:
-		fmt.Println("Unknow flag: ", os.Args[1])
+		fmt.Println("Unknow flag:", os.Args[1])
 	}
 }
 
