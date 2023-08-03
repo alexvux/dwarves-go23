@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	arr := [][]int{ // 8 rows 7 cols
@@ -19,45 +21,87 @@ func main() {
 }
 
 func countRectangles(arr [][]int) int {
-	// create visited matrix
+	count := 0
+	// init visited matrix
 	rows := len(arr)
 	cols := len(arr[0])
 	visited := make([][]bool, rows)
-
-	for i := 0; i < rows; i++ {
+	for i := range visited {
 		visited[i] = make([]bool, cols)
 	}
 
-	// count number of rectangles in arr
-	count := 0
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			if !visited[i][j] {
-				if arr[i][j] == 1 {
-					count++
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			// found a rectangle
+			if arr[row][col] == 1 && !visited[row][col] {
+				// get size of rectangle
+				nStart, nEnd := col, col
+				for nEnd < cols && arr[row][nEnd] == 1 {
+					nEnd++
 				}
-				visitNeighbor(arr, visited, i, j, rows, cols)
+				mStart, mEnd := row, row
+				for mEnd < rows && arr[mEnd][col] == 1 {
+					mEnd++
+				}
+				// check if rectangle has cell with value '0' or has been visited
+				if !isValidRectangle(arr, visited, mStart, mEnd, nStart, nEnd) {
+					return -1
+				}
+				// check if rectangle has no adjacent rectangles or not
+				if !hasNoAdjacentRectangle(arr, mStart, mEnd, nStart, nEnd, rows, cols) {
+					return -1
+				}
+				count++
 			}
 		}
 	}
-	fmt.Println(visited)
 	return count
 }
 
-func visitNeighbor(arr [][]int, visited [][]bool, row, col, rows, cols int) {
-	if row < 0 || row >= rows || col < 0 || col >= cols || visited[row][col] {
-		return
+func isValidRectangle(arr [][]int, visited [][]bool, rowStart, rowEnd, colStart, colEnd int) bool {
+	for row := rowStart; row < rowEnd; row++ {
+		for col := colStart; col < colEnd; col++ {
+			if arr[row][col] == 0 || visited[row][col] {
+				return false
+			}
+			visited[row][col] = true
+		}
 	}
+	return true
+}
 
-	visited[row][col] = true
-
-	if arr[row][col] == 0 {
-		return
+func hasNoAdjacentRectangle(arr [][]int, rowStart, rowEnd, colStart, colEnd, rows, cols int) bool {
+	// check top border
+	if rowStart > 0 {
+		for col := colStart; col < colEnd; col++ {
+			if arr[rowStart-1][col] != 0 {
+				return false
+			}
+		}
 	}
-
-	visitNeighbor(arr, visited, row-1, col, rows, cols)
-	visitNeighbor(arr, visited, row+1, col, rows, cols)
-	visitNeighbor(arr, visited, row, col-1, rows, cols)
-	visitNeighbor(arr, visited, row, col+1, rows, cols)
-
+	// check bottom border
+	if rowEnd < rows-1 {
+		for col := colStart; col < colEnd; col++ {
+			if arr[rowEnd][col] != 0 {
+				return false
+			}
+		}
+	}
+	// check left border
+	if colStart > 0 {
+		for row := rowStart; row < rowEnd; row++ {
+			if arr[row][colStart-1] != 0 {
+				return false
+			}
+		}
+	}
+	// check right border
+	if colEnd < cols-1 {
+		for row := rowStart; row < rowEnd; row++ {
+			if arr[row][colEnd] != 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
