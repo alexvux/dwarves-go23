@@ -7,59 +7,70 @@ import (
 	"os"
 	"time"
 
-	"github.com/gocolly/colly"
-	"github.com/gocolly/colly/extensions"
+	"github.com/gocolly/colly/v2"
+	"github.com/gocolly/colly/v2/extensions"
 )
 
-type Manga struct {
-	Name     string
-	Chapters int
-	Views    int
-	Likes    int
-	Img      string
-	Url      string
+type Comic struct {
+	Name        string `json:"name"`
+	Url         string `json:"url"`
+	Image       string `json:"image"`
+	LastChapter string `json:"last_chapter"`
+	Status      string `json:"status"`
+	Views       string `json:"views"`
+	Subscribe   string `json:"subcribe"`
 }
 
 func main() {
 	// remove data file (if existed) before scraping
-	filename := "fantasy-manga.json"
+	filename := "data.json"
 	if _, err := os.Stat(filename); err == nil {
 		if err := os.Remove(filename); err != nil {
 			log.Fatalln("Error on removing data file:", err)
 		}
-		fmt.Println("Removing old data file before scraping...")
+		fmt.Println("Removing old data file before scraping")
 	}
 
-	url := "https://thienhatruyen.com/the-loai/fantasy"
-	domains := []string{"https://thienhatruyen.com", "thienhatruyen.com"}
-	mangalist := []Manga{}
+	url := "https://truyenqqq.vn/the-loai/action-26.html"
+	domains := []string{"https://truyenqqq.vn", "truyenqqq.vn"}
+	comics := []Comic{}
 
 	c := colly.NewCollector(colly.AllowedDomains(domains...))
 	c.SetRequestTimeout(120 * time.Second)
 	extensions.RandomUserAgent(c)
 
 	// set up callbacks
-	// todo: scrape
+	c.OnHTML("ul.list_grid > li", func(h *colly.HTMLElement) {
+		comic := Comic{}
+		comic.Name = h.ChildText("div.book_info > div.book_name.qtip > h3 > a")
+		comic.Url = h.ChildAttr("div.book_avatar > a", "href")
+		comic.Image = h.ChildAttr("div.book_avatar > a > img", "src")
+		comic.LastChapter = h.ChildText("div.book_info > div.last_chapter > a")
+		comic.Status = h.ChildText("div.book_info > div.more-info > p:nth-child(2)")
+		comic.Views = h.ChildText("div.book_info > div.more-info > p:nth-child(3)")
+		comic.Subscribe = h.ChildText("div.book_info > div.more-info > p:nth-child(4)")
+		comics = append(comics, comic)
+	})
+
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
 	})
 
 	c.OnResponse(func(r *colly.Response) {
-		fmt.Println("Get a response from", r.Request.URL)
+		fmt.Println("Status code", r.StatusCode)
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Got this error:", err)
+		fmt.Println("Response", r, "got this error:", err)
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("Finished", r.Request.URL)
-		js, err := json.MarshalIndent(mangalist, "", "\t")
+		fmt.Println("Finished scraping", r.Request.URL)
+		js, err := json.MarshalIndent(comics, "", "\t")
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		fmt.Println("Write data to file")
 		if err := os.WriteFile(filename, js, 0644); err == nil {
 			fmt.Println("Data written to file successfully")
 		}
