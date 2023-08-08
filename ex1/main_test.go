@@ -19,7 +19,7 @@ func Test_main(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// redirect stdout to another memory for capturing the output
+			// redirect stdout to capture the output
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
 			os.Stdout = w
@@ -30,6 +30,9 @@ func Test_main(t *testing.T) {
 			os.Stdout = oldStdout
 			output := make([]byte, 1024)
 			n, _ := r.Read(output)
+			// close connection of the new pipe
+			r.Close()
+			w.Close()
 
 			if string(output[:n]) != tc.output {
 				t.Errorf("Test %q: got %q, want %q", tc.name, output[:n], tc.output)
