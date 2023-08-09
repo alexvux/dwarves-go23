@@ -18,7 +18,7 @@ type Comic struct {
 	LastChapter string `json:"last_chapter"`
 	Status      string `json:"status"`
 	Views       string `json:"views"`
-	Subscribe   string `json:"subcribe"`
+	Subscribe   string `json:"subscribe"`
 }
 
 func main() {
@@ -35,21 +35,39 @@ func main() {
 	domains := []string{"https://truyenqqq.vn", "truyenqqq.vn"}
 	comics := []Comic{}
 
-	c := colly.NewCollector(colly.AllowedDomains(domains...))
+	c := colly.NewCollector(
+		colly.AllowedDomains(domains...),
+		colly.Async(true), // turn on asynchronous requests
+	)
+
 	c.SetRequestTimeout(120 * time.Second)
+	c.Limit(&colly.LimitRule{
+		DomainGlob:  "*truyenqqq.vn*",
+		Parallelism: 5, // limit the parallel requests to 5 request at a time
+		RandomDelay: 2 * time.Second,
+	})
 	extensions.RandomUserAgent(c)
 
 	// set up callbacks
 	c.OnHTML("ul.list_grid > li", func(h *colly.HTMLElement) {
-		comic := Comic{}
-		comic.Name = h.ChildText("div.book_info > div.book_name.qtip > h3 > a")
-		comic.Url = h.ChildAttr("div.book_avatar > a", "href")
-		comic.Image = h.ChildAttr("div.book_avatar > a > img", "src")
-		comic.LastChapter = h.ChildText("div.book_info > div.last_chapter > a")
-		comic.Status = h.ChildText("div.book_info > div.more-info > p:nth-child(2)")
-		comic.Views = h.ChildText("div.book_info > div.more-info > p:nth-child(3)")
-		comic.Subscribe = h.ChildText("div.book_info > div.more-info > p:nth-child(4)")
+		comic := Comic{
+			Name:        h.ChildText("div.book_info > div.book_name.qtip > h3 > a"),
+			Url:         h.ChildAttr("div.book_avatar > a", "href"),
+			Image:       h.ChildAttr("div.book_avatar > a > img", "src"),
+			LastChapter: h.ChildText("div.book_info > div.last_chapter > a"),
+			Status:      h.ChildText("div.book_info > div.more-info > p:nth-child(2)"),
+			Views:       h.ChildText("div.book_info > div.more-info > p:nth-child(3)"),
+			Subscribe:   h.ChildText("div.book_info > div.more-info > p:nth-child(4)"),
+		}
 		comics = append(comics, comic)
+	})
+
+	// scrape the next page by get its link and then call c.Visit again
+	c.OnHTML("div.page_redirect a[href]", func(h *colly.HTMLElement) {
+		if h.Text == "›" {
+			nextPage := h.Attr("href")
+			c.Visit(nextPage)
+		}
 	})
 
 	c.OnRequest(func(r *colly.Request) {
@@ -61,20 +79,25 @@ func main() {
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Response", r, "got this error:", err)
+		fmt.Println("Got error from request:", r.Request.URL, "with error:", err)
 	})
 
-	c.OnScraped(func(r *colly.Response) {
-		fmt.Println("Finished scraping", r.Request.URL)
-		js, err := json.MarshalIndent(comics, "", "\t")
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if err := os.WriteFile(filename, js, 0644); err == nil {
-			fmt.Println("Data written to file successfully")
-		}
-	})
-
+	// start to scrape
+	start := time.Now()
 	c.Visit(url)
+	c.Wait()
+	end := time.Since(start)
+
+	fmt.Println("Scrape total", len(comics), "comics")
+	fmt.Println("Took", end)
+
+	// write data to file
+	content, err := json.MarshalIndent(comics, "", "\t")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := os.WriteFile(filename, content, 0644); err != nil {
+		fmt.Println("Error on writing data to file")
+	}
 }
