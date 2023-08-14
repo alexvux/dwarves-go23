@@ -5,31 +5,34 @@ import (
 	"github.com/alexvux/dwarves-go23/ex6/pkg/model"
 )
 
-func GetAllProducts(prodcut model.Product) []model.Product {
-	return DB.Products
+func GetAllProducts() ([]model.Product, error) {
+	if len(DB.Products) == 0 {
+		return []model.Product{}, constant.ErrEmptyProductList
+	}
+	return DB.Products, nil
 }
 
 func AddProduct(product model.Product) error {
-	if _, err := findProductByID(product.ID); err != nil {
-		return err
+	if findProductIdxByID(product.ID) == -1 {
+		DB.Products = append(DB.Products, product)
+		return nil
 	}
-	DB.Products = append(DB.Products, product)
-	return nil
+	return constant.ErrProductAlreadyExist
 }
 
-func UpdateProduct(product model.Product) error {
-	idx, err := findProductByID(product.ID)
-	if err != nil {
-		return err
+func UpdateProduct(id int, product model.Product) error {
+	idx := findProductIdxByID(id)
+	if idx == -1 {
+		return constant.ErrProductNotFound
 	}
 	DB.Products[idx] = product
 	return nil
 }
 
-func DeleteProduct(product model.Product) error {
-	idx, err := findProductByID(product.ID)
-	if err != nil {
-		return err
+func DeleteProduct(id int) error {
+	idx := findProductIdxByID(id)
+	if idx == -1 {
+		return constant.ErrProductNotFound
 	}
 	last := len(DB.Products) - 1
 	DB.Products[idx] = DB.Products[last]
@@ -37,11 +40,11 @@ func DeleteProduct(product model.Product) error {
 	return nil
 }
 
-func findProductByID(id int) (int, error) {
-	for idx, p := range DB.Products {
-		if id == p.ID {
-			return idx, nil
+func findProductIdxByID(id int) int {
+	for i, p := range DB.Products {
+		if p.ID == id {
+			return i
 		}
 	}
-	return 0, constant.ErrProductNotFound
+	return -1
 }

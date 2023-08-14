@@ -9,11 +9,12 @@ import (
 
 func AddItemToCart(item model.Item) error {
 	// check if product exists
-	if _, err := findProductByID(item.ID); err != nil {
-		return err
+	if findProductIdxByID(item.ID) == -1 {
+		return constant.ErrProductNotFound
 	}
 	// check if item already exists in cart, then update quantity
-	if idx, err := findItemByID(item.ID); err == nil {
+	idx := findItemIdxByID(item.ID)
+	if idx != -1 {
 		DB.Cart[idx].Quantity += item.Quantity
 		return nil
 	}
@@ -23,9 +24,9 @@ func AddItemToCart(item model.Item) error {
 }
 
 func DeleteItemFromCart(item model.Item) error {
-	idx, err := findItemByID(item.ID)
-	if err != nil {
-		return err
+	idx := findItemIdxByID(item.ID)
+	if idx == -1 {
+		return constant.ErrItemNotFound
 	}
 	last := len(DB.Cart) - 1
 	DB.Cart[idx] = DB.Cart[last]
@@ -40,39 +41,42 @@ func Checkout() (string, error) {
 
 	totalPrice := float64(0)
 	reciept := "Reciept:\n"
-	pidToCheckout := []int{}
+	idxToCheckout := []int{}
+	productToCheckout := []model.Product{}
 
 	for _, item := range DB.Cart {
 		// check if product exists
-		pid, err := findProductByID(item.ID)
-		if err != nil {
-			return "", wrapErrorWithItemID(item.ID, err)
+		idx := findProductIdxByID(item.ID)
+		if idx == -1 {
+			return "", wrapErrorWithItemID(item.ID, constant.ErrProductNotFound)
 		}
 		// check if product is in stock
-		product := DB.Products[pid]
+		product := DB.Products[idx]
 		if product.Quantity < item.Quantity {
 			return "", wrapErrorWithItemID(item.ID, constant.ErrOutOfStock)
 		}
 		// update reciept and save product to checkout
 		totalPrice += product.Price * float64(item.Quantity)
 		reciept += fmt.Sprintf("\t%s x %d = %.2f\n", product.Name, item.Quantity, product.Price*float64(item.Quantity))
-		pidToCheckout = append(pidToCheckout, pid)
+		idxToCheckout = append(idxToCheckout, idx)
+		product.Quantity -= item.Quantity
+		productToCheckout = append(productToCheckout, product)
 	}
-	// update cart and products
-	for _, idx := range pidToCheckout {
-		DB.Products[idx].Quantity -= DB.Cart[idx].Quantity
+	// update cart and products // dang sai
+	for i, idx := range idxToCheckout {
+		DB.Products[idx] = productToCheckout[i]
 	}
 	DB.Cart = []model.Item{}
-	return fmt.Sprintf("%s\tTotal: %.2f", reciept, totalPrice), nil
+	return fmt.Sprintf("%sTotal: %.2f", reciept, totalPrice), nil
 }
 
-func findItemByID(id int) (int, error) {
-	for idx, item := range DB.Cart {
-		if id == item.ID {
-			return idx, nil
+func findItemIdxByID(id int) int {
+	for i, item := range DB.Cart {
+		if item.ID == id {
+			return i
 		}
 	}
-	return 0, constant.ErrItemNotFound
+	return -1
 }
 
 func wrapErrorWithItemID(id int, err error) error {
