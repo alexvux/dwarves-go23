@@ -23,8 +23,8 @@ func AddItemToCart(item model.Item) error {
 	return nil
 }
 
-func DeleteItemFromCart(item model.Item) error {
-	idx := findItemIdxByID(item.ID)
+func DeleteItemFromCart(id int) error {
+	idx := findItemIdxByID(id)
 	if idx == -1 {
 		return constant.ErrItemNotFound
 	}

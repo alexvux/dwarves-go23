@@ -29,7 +29,7 @@ func AddProduct(c *gin.Context) {
 		util.BindJSONWithError(c, http.StatusBadRequest, err)
 		return
 	}
-	util.BindJSONWithMessage(c, http.StatusCreated, "add product successfully")
+	util.BindJSONWithMessage(c, http.StatusOK, "add product successfully")
 }
 
 func UpdateProduct(c *gin.Context) {
