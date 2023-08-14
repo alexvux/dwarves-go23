@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/alexvux/dwarves-go23/ex6/pkg/router"
 )
 
 func main() {
-	router := setupRouter()
+	router := router.SetupRouter()
 
 	srv := http.Server{
 		Addr:    ":8080",
@@ -37,9 +37,4 @@ func main() {
 		log.Println("Server forced to shutdown:", err)
 	}
 	log.Println("Server exiting")
-}
-
-func setupRouter() *gin.Engine {
-	r := gin.Default()
-	return r
 }

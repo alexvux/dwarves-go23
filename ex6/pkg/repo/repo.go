@@ -9,10 +9,10 @@ type Database struct {
 	Cart     []model.Item
 }
 
-var LocalDB *Database
+var DB *Database
 
 func init() {
-	LocalDB = newDatabase()
+	DB = newDatabase()
 }
 
 func newDatabase() *Database {

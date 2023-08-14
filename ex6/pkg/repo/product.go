@@ -6,14 +6,14 @@ import (
 )
 
 func GetAllProducts(prodcut model.Product) []model.Product {
-	return LocalDB.Products
+	return DB.Products
 }
 
 func AddProduct(product model.Product) error {
 	if _, err := findProductByID(product.ID); err != nil {
 		return err
 	}
-	LocalDB.Products = append(LocalDB.Products, product)
+	DB.Products = append(DB.Products, product)
 	return nil
 }
 
@@ -22,7 +22,7 @@ func UpdateProduct(product model.Product) error {
 	if err != nil {
 		return err
 	}
-	LocalDB.Products[idx] = product
+	DB.Products[idx] = product
 	return nil
 }
 
@@ -31,16 +31,16 @@ func DeleteProduct(product model.Product) error {
 	if err != nil {
 		return err
 	}
-	last := len(LocalDB.Products) - 1
-	LocalDB.Products[idx] = LocalDB.Products[last]
-	LocalDB.Products = LocalDB.Products[:last]
+	last := len(DB.Products) - 1
+	DB.Products[idx] = DB.Products[last]
+	DB.Products = DB.Products[:last]
 	return nil
 }
 
 func findProductByID(id int) (int, error) {
-	for i, p := range LocalDB.Products {
+	for idx, p := range DB.Products {
 		if id == p.ID {
-			return i, nil
+			return idx, nil
 		}
 	}
 	return 0, constant.ErrProductNotFound
