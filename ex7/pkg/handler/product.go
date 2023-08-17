@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/alexvux/dwarves-go23/ex7/pkg/constant"
 	"github.com/alexvux/dwarves-go23/ex7/pkg/model"
 	"github.com/alexvux/dwarves-go23/ex7/pkg/repo"
 	"github.com/alexvux/dwarves-go23/ex7/pkg/util"
@@ -46,7 +47,12 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	if err := repo.UpdateProduct(id, product); err != nil {
+	if id != int(product.ID) {
+		util.BindJSONWithError(c, http.StatusBadRequest, constant.ErrProductIDNotMatch)
+		return
+	}
+
+	if err := repo.UpdateProduct(product); err != nil {
 		util.BindJSONWithError(c, http.StatusBadRequest, err)
 		return
 	}

@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"log"
+
 	"github.com/alexvux/dwarves-go23/ex7/pkg/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,11 +15,13 @@ func InitDB(connStr string) error {
 	if err != nil {
 		return err
 	}
+	log.Println("Connect to postgres DB successfully")
 
 	err = db.AutoMigrate(&model.Product{}, &model.Order{}, &model.OrderItem{})
 	if err != nil {
 		return err
 	}
+	log.Println("Auto migrate successfully")
 
 	DB = db
 	return nil
