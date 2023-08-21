@@ -1,2 +1,3 @@
-data.json
-coverage.out
+*.json
+*.out
+.env
