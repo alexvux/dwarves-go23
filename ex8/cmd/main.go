@@ -9,19 +9,22 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexvux/dwarves-go23/ex8/pkg/config"
 	"github.com/alexvux/dwarves-go23/ex8/pkg/repo"
 	"github.com/alexvux/dwarves-go23/ex8/pkg/router"
 )
 
 func main() {
-	dsn := "host=localhost user=postgres password=admin dbname=ex8_local port=5432 sslmode=disable"
-	if err := repo.InitDB(dsn); err != nil {
+	// dsn := "host=localhost user=postgres password=admin dbname=ex8_local port=5432 sslmode=disable"
+	cfg := config.LoadConfig()
+
+	if err := repo.InitDB(cfg.DatabaseUrl); err != nil {
 		log.Fatal(err)
 	}
 
 	router := router.SetupRouter()
 	srv := http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + cfg.Port,
 		Handler: router,
 	}
 	// run server in goroutine
